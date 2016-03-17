@@ -1,5 +1,38 @@
 THEORY:
+BF Algorithm is a primary method  for matching substring, and it musts to be known for a developer.
+
+if some askes you for how to find a string in a file by programing, BF Algorithm will emerge in your head at once.
+So, I also will tell you my awnser immediately. The Follows are my understanding about BF Algorithm. At first, we
+need to get the length of string. Then, the length of s assigns to sl and the length of t assigns to tl. if sl or
+tl is low of zero, there will be nothing we need to do. On the contrary, if sl and tl are both upon zero, we can
+compare t to s in turn. if s[i] is equal to t[j], the indexs move to the next bothly. if s[i] is not equal to t[j],
+we must alter i to i-j+i and alter j to 0. Finally, it is necessary for operating the result.
 
 PESUDOCODE:
 
 CODE:
+int pm_bf(char *s, char *t)
+{
+    int sl=text_length(s);
+    int tl=text_length(t);
+
+    if(sl<=0||tl<=0) return -1;
+    int i=0,j=0;
+    while(i<sl&&j<tl)
+    {
+        while(j<tl)
+        {
+            if(s[i]==t[j])
+            {
+                ++i;
+                ++j;
+            }
+            else
+            {
+                i=i-j+1;
+                j=0;
+            }
+        }
+    }
+    return (j>=tl)?i-j:-1;
+}
