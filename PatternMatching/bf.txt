@@ -11,6 +11,8 @@ we must alter i to i-j+i and alter j to 0. Finally, it is necessary for operatin
 PESUDOCODE:
 
 CODE:
+
+//Brute Force Algorithm
 int pm_bf(char *s, char *t)
 {
     int sl=text_length(s);
