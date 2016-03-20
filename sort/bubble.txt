@@ -1,0 +1,27 @@
+THEORY:
+
+PESUDOCODE:
+
+CODE:
+
+//Bubble Sorting
+int sort_bubble(int *a, int s)
+{
+    if(a==NULL||s<=0) return 0;
+    
+    int i=0,j=0;
+    
+    for(i=0;i<s-1;++i)
+    {
+        for(j=0;j<s-i-1;++j)
+        {
+            if(a[j]>a[j+1])
+            {
+                a[j]=a[j]^a[j+1];
+                a[j+1]=a[j]^a[j+1];
+                a[j]=a[j]^a[j+1];
+             }
+         }
+    }
+    return 1;
+}
