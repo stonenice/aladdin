@@ -1,0 +1,25 @@
+void sort_quick_part(int *a, int low, int high)
+{
+    if(a==NULL||low<0||low>high) return;
+
+    int key=a[low];
+    int i=low,j=high;
+
+    while(i<j)
+    {
+        while(i<j&&a[j]>key) --j;
+        a[i]=a[j];
+        while(i<j&&a[i]<key) ++i;
+        a[j]=a[i];
+    }
+    a[i]=key;
+    sort_quick_part(a,low,i-1);
+    sort_quick_part(a,i+1,high);
+}
+
+int sort_quick(int *a, int s)
+{
+    if(a==NULL||s<=0) return 0;
+    sort_quick_part(a,0,s-1);
+    return 1;
+}
