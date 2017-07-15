@@ -39,9 +39,10 @@ import java.util.Map;
  * String content=aes.decode(cipherText,key,seed);
  *
  * </code>
- * Created by wb-xjg279016 on 2017/7/12.
+ 
+ * Created by stonenice on 2017/7/12.
  *
- * @author wb-xjg279016
+ * @author stonenice
  */
 public interface Encryptor {
 
