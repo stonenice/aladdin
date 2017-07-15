@@ -18,7 +18,7 @@ import java.util.Map;
  */
 @Component("AES")
 public class AESEncryptor implements Encryptor {
-    public static final String AES_IV = "tuofenguaccatsdk";
+    public static final String AES_IV = "stonenice";
     public static final String AES_KEY_ALGORITHM = "AES";
     public final static String AES_ALGORITHM = "AES/CBC/PKCS5Padding";
     public static final int KEYSIZE = 256;
