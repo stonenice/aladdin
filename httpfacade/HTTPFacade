@@ -1,0 +1,304 @@
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Created stonenice on 2017/7/10.
+ *
+ * @author stonenice
+ */
+public abstract class HTTPFacade {
+
+    public final static String HEADER_ENTRY_PREFIX = "header:";
+    public final static String HEADER_EXT_META = "Extension-Infos";
+
+    public static Map<String, Object> splitHeadersFromMap(Map<String, Object> map) {
+        if (map == null || map.size() <= 0) return null;
+        Map<String, Object> headers = Maps.newHashMap();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = entry.getKey();
+            key = key != null ? key.trim() : "";
+            if (key.startsWith(HEADER_ENTRY_PREFIX)) {
+                headers.put(key.replace(HEADER_ENTRY_PREFIX, ""), entry.getValue());
+            }
+        }
+        return headers;
+    }
+
+    public static Map<String, Object> splitParamsFromMap(Map<String, Object> map) {
+        if (map == null || map.size() <= 0) return null;
+        Map<String, Object> params = Maps.newHashMap();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = entry.getKey();
+            key = key != null ? key.trim() : "";
+            if (!key.startsWith(HEADER_ENTRY_PREFIX)) {
+                params.put(key, entry.getValue());
+            }
+        }
+        return params;
+    }
+
+    public static Map<String, String> splitExtenstionInfosFromHeaders(Map<String, Object> headers) {
+        if (headers == null || !headers.containsKey(HEADER_EXT_META)) return null;
+        Object obj = headers.get(HEADER_EXT_META);
+        if (obj == null) return null;
+        return parseHeaderExtensionInfos(obj.toString());
+    }
+
+    public static Map<String, String> parseHeaderExtensionInfos(String line) {
+        if (StringUtils.isBlank(line)) return null;
+        String[] items = line.split(";");
+        Map<String, String> infos = Maps.newHashMap();
+        for (String item : items) {
+            int pos = item.indexOf("=");
+            if (pos <= 0) continue;
+            String key = item.substring(0, pos).trim();
+            String val = pos + 1 < item.length() ? item.substring(pos + 1).trim() : "";
+            infos.put(key, val);
+        }
+        return infos;
+    }
+
+    public abstract void sessionStart();
+
+    public abstract void sessionDestory();
+
+    public abstract Object getCookie(String key);
+
+    public abstract Object getSession(String key);
+
+    public abstract void setHeaders(Map<String, Object> headers);
+
+    public abstract HTTPResult get(String url);
+
+    public abstract HTTPResult get(String url, Map<String, Object> params);
+
+    public abstract HTTPResult post(String url, String rawRes);
+
+    public abstract HTTPResult post(String url, Map<String, Object> params);
+
+    public abstract HTTPResult put(String url, String rawRes);
+
+    public abstract HTTPResult put(String url, Map<String, Object> params);
+
+    public abstract HTTPResult delete(String url);
+
+    public abstract HTTPResult delete(String url, String rawRes);
+
+    public abstract HTTPResult delete(String url, Map<String, Object> params);
+
+    public static class HTTPResult {
+        private boolean success;
+        private int statusCode;
+        private Map<String, Object> headers;
+        private String body;
+        private long responseTime;
+
+        public static HTTPResult newSuccessResult() {
+            return new HTTPResult(true);
+        }
+
+        public static HTTPResult newErrorResult() {
+            return new HTTPResult(false);
+        }
+
+        public static HTTPResult newErrorResult(String body) {
+            return new HTTPResult(false, body);
+        }
+
+        private HTTPResult(boolean success) {
+            this(success, null);
+        }
+
+        private HTTPResult(boolean success, String body) {
+            this.success = success;
+            this.body = body;
+        }
+
+        public boolean isSuccessful() {
+            return success;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public void setStatusCode(int statusCode) {
+            this.statusCode = statusCode;
+        }
+
+        public Map<String, Object> getHeaders() {
+            return headers;
+        }
+
+        public void setHeaders(Map<String, Object> headers) {
+            this.headers = headers;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public void setBody(String body) {
+            this.body = body;
+        }
+
+        public long getResponseTime() {
+            return responseTime;
+        }
+
+        public void setResponseTime(long responseTime) {
+            this.responseTime = responseTime;
+        }
+    }
+
+    public static class JString {
+
+        public final static String format(String tpl, String json) {
+            return new JString(tpl).toString(json);
+        }
+
+        public final static String format(String tpl, List<Object> args) {
+            return new JString(tpl).toString(args);
+        }
+
+        public final static String format(String tpl, Map<String, Object> kwargs) {
+            return new JString(tpl).toString(kwargs);
+        }
+
+        public final static JString valueOf(String tpl) {
+            return new JString(tpl);
+        }
+
+        private final static SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        private String content;
+
+        private String tagPrefix;
+        private String tagSuffix;
+
+        public JString(Object obj) {
+            this.tagPrefix = "${";
+            this.tagSuffix = "}";
+
+            if (obj instanceof String) {
+                content = obj.toString();
+            } else if (obj instanceof Date) {
+                content = SDF.format(obj);
+            } else {
+                content = "";
+            }
+        }
+
+        public String getTagPrefix() {
+            return tagPrefix;
+        }
+
+        public void setTagPrefix(String tagPrefix) {
+            this.tagPrefix = tagPrefix;
+        }
+
+        public String getTagSuffix() {
+            return tagSuffix;
+        }
+
+        public void setTagSuffix(String tagSuffix) {
+            this.tagSuffix = tagSuffix;
+        }
+
+        public boolean neededFill() {
+            if (content == null || content.length() <= 0) return false;
+            return content.indexOf(tagPrefix) >= 0;
+        }
+
+        public List<String> placeholders() {
+            Pattern p = Pattern.compile("(\\$\\{\\s*(?<holder>[\\w\\d_\\.\\-]+)\\s*\\})");
+            Matcher m = p.matcher(content);
+            Set<String> set = Sets.newHashSet();
+            while (m.find()) {
+                String holder = m.group("holder");
+                set.add(holder);
+            }
+            return Lists.newArrayList(set);
+        }
+
+
+        @Override
+        public String toString() {
+            return content;
+        }
+
+        public String toString(List<Object> args) {
+            return regexAndFill(args);
+        }
+
+
+        public String toString(Map<String, Object> kwargs) {
+            return regexAndFill(kwargs);
+        }
+
+        public String toString(String json) {
+            if (json == null) return content;
+            try {
+                json = json.trim();
+                if (json.startsWith("{")) {
+                    Map<String, Object> map = JSON.parseObject(json, new TypeReference<Map<String, Object>>() {
+                    });
+                    return regexAndFill(map);
+                } else if (json.startsWith("[")) {
+                    List<Object> list = JSON.parseArray(json, Object.class);
+                    return regexAndFill(list);
+                } else {
+                    return content;
+                }
+            } catch (Exception e) {
+                return content;
+            }
+        }
+
+        public String regexAndFill(List<Object> args) {
+            if (neededFill() && args != null && args.size() > 0) {
+                String newcontent = content;
+                int len = args.size();
+                for (int i = 0; i < len; ++i) {
+                    Object obj = args.get(i);
+                    if (obj == null) continue;
+                    String val = obj instanceof Date ? SDF.format(obj) : obj.toString();
+                    newcontent = newcontent.replaceAll("\\$\\{\\s*" + i + "\\s*\\}", val);
+                }
+                return newcontent;
+            } else {
+                return content;
+            }
+        }
+
+        public String regexAndFill(Map<String, Object> kwargs) {
+            if (neededFill() && kwargs != null && kwargs.size() > 0) {
+                String newcontent = content;
+                List<String> holders = placeholders();
+                for (String holder : holders) {
+                    if (!kwargs.containsKey(holder)) continue;
+                    Object obj = kwargs.get(holder);
+                    String val = obj instanceof Date ? SDF.format(obj) : obj.toString();
+                    newcontent = newcontent.replaceAll("\\$\\{\\s*" + holder + "\\s*\\}", val);
+                }
+                return newcontent;
+            } else {
+                return content;
+            }
+        }
+    }
+
+}
